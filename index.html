@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head> 
+  <!-- Start cookieyes banner -->
+  <script
+  id="cookieyes"
+  type="text/javascript"
+  src="https://cdn-cookieyes.com/client_data/9b51b34d2657bcf5edcac51d/script.js"
+></script> 
+<!-- End cookieyes banner -->
+    <meta charset="UTF-8">
+    <title>saliver</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+</head>
+<body>
+    <div class="navbar" style="background-color: lightorange;">
+        <a href="/">Home</a>
+        <a href="/settings">Settings</a>
+        <a href="/logout">Logout</a>
+    </div>
+
+    <div class="container" style="background-color: darkblue; color: white;">
+        <div id="loginSection">
+            <h2>Login</h2>
+            <form id="loginForm">
+                <label for="loginUsername">Username:</label>
+                <input type="text" id="loginUsername" name="username" required style="background-color: darkorange;"><br><br>
+                <label for="loginPassword">Password:</label>
+                <input type="password" id="loginPassword" name="password" required style="background-color: darkorange;"><br><br>
+                <button type="submit" style="background-color: blue; color: white;">Login</button>
+            </form>
+            <button id="showSignup" style="background-color: blue; color: white;">Don't have an account? Sign Up</button>
+        </div>
+
+        <div id="signupSection" style="display:none;">
+            <h2>Sign Up</h2>
+            <form id="signupForm">
+                <label for="signupUsername">Username:</label>
+                <input type="text" id="signupUsername" name="username" required style="background-color: darkorange;"><br><br>
+                <label for="signupPassword">Password:</label>
+                <input type="password" id="signupPassword" name="password" required style="background-color: darkorange;"><br><br>
+                <button type="submit" style="background-color: blue; color: white;">Sign Up</button>
+            </form>
+            <button id="showLogin" style="background-color: blue; color: white;">Already have an account? Login</button>
+        </div>
+
+        <div id="accountSection" style="display:none;">
+            <h2>Account Balance</h2>
+            <p id="balance"></p>
+
+            <h2>Deposit Funds</h2>
+            <form id="depositForm">
+                <label for="toAccount">To Account:</label>
+                <input type="text" id="toAccount" name="toAccount" required style="background-color: darkorange;"><br><br>
+                <label for="amount">Amount:</label>
+                <input type="number" id="amount" name="amount" required style="background-color: darkorange;"><br><br>
+                <button type="submit" style="background-color: blue; color: white;">Deposit</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- GDPR and CCPA Compliance -->
+    <div id="cookieConsentBanner" style="position: fixed; bottom: 0; width: 100%; background-color: #333; color: white; text-align: center; padding: 10px; display: none;">
+        <p>We use cookies to ensure you get the best experience on our website. By continuing to use our site, you accept our use of cookies, revised Privacy Policy, and Terms of Use. <a href="/privacy-policy" style="color: #4CAF50;">Learn more</a></p>
+        <button id="acceptCookies" style="background-color: #4CAF50; color: white; border: none; padding: 10px 20px; cursor: pointer;">Accept</button>
+    </div>
+
+    <script>
+        const socket = io();
+
+        document.getElementById('loginForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('signupSection').style.display = 'none';
+                document.getElementById('accountSection').style.display = 'block';
+                document.getElementById('balance').innerText = `Balance: $${data.balance}`;
+            }
+        });
+
+        document.getElementById('signupForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const username = document.getElementById('signupUsername').value;
+            const password = document.getElementById('signupPassword').value;
+
+            fetch('/api/signup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
+            }).then(response => {
+                if (response.ok) {
+                    document.getElementById('signupSection').style.display = 'none';
+                    document.getElementById('loginSection').style.display = 'block';
+                }
+            });
+        });
+
+        document.getElementById('showSignup').addEventListener('click', function() {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('signupSection').style.display = 'block';
+        });
+
+        document.getElementById('showLogin').addEventListener('click', function() {
+            document.getElementById('signupSection').style.display = 'none';
+            document.getElementById('loginSection').style.display = 'block';
+        });
+
+        socket.on('balance_update', function(data) {
+            document.getElementById('balance').innerText = `Balance: $${data.balance}`;
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const cookieConsentBanner = document.getElementById('cookieConsentBanner');
+            const acceptCookiesButton = document.getElementById('acceptCookies');
+
+            if (!localStorage.getItem('cookiesAccepted')) {
+                cookieConsentBanner.style.display = 'block';
+            }
+
+            acceptCookiesButton.addEventListener('click', function() {
+                localStorage.setItem('cookiesAccepted', 'true');
+                cookieConsentBanner.style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html>
